@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>발주서 변환기</title>
+  <style>
+    :root {
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --ok: #16a34a;
+      --warn: #d97706;
+      --err: #dc2626;
+      --muted: #6b7280;
+      --bg: #f9fafb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo",
+                   "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: #111827;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+    h1 { font-size: 24px; margin: 0 0 4px; }
+    .subtitle { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
+
+    .dropzone {
+      background: var(--card);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .dropzone.drag { border-color: var(--accent); background: #eff6ff; }
+    .dropzone p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .dropzone strong { color: #111827; font-size: 16px; }
+
+    #file-input { display: none; }
+
+    .file-list {
+      margin-top: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .file-list:empty { display: none; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .file-item:first-child { border-top: none; }
+    .file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis;
+                       white-space: nowrap; }
+    .file-item .remove {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 16px; padding: 4px 8px;
+    }
+    .file-item .remove:hover { color: var(--err); }
+
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button.primary {
+      background: var(--accent); color: white; border: none; padding: 10px 20px;
+      border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    button.primary:hover { background: var(--accent-hover); }
+    button.primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    button.ghost {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      padding: 9px 16px; border-radius: 8px; font-size: 14px; cursor: pointer;
+    }
+    button.ghost:hover { color: #111827; border-color: #9ca3af; }
+
+    .status-area { margin-top: 28px; }
+    .status-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 20px; margin-bottom: 12px;
+    }
+    .status-card h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    tr:last-child td { border-bottom: none; }
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 500;
+    }
+    .tag.ok    { background: #d1fae5; color: #065f46; }
+    .tag.warn  { background: #fef3c7; color: #92400e; }
+    .tag.err   { background: #fee2e2; color: #991b1b; }
+
+    .download-banner {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      padding: 14px 18px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .download-banner a {
+      background: var(--ok); color: white; padding: 8px 16px; border-radius: 8px;
+      text-decoration: none; font-weight: 600; font-size: 13px;
+    }
+    .download-banner a:hover { background: #15803d; }
+
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid #e5e7eb;
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin .8s linear infinite;
+      display: inline-block; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>발주서 변환기</h1>
+    <p class="subtitle">발주서 파일(xlsx · xls · html · pdf)을 업로드하면 표준 양식 엑셀로 합쳐 다운로드합니다. 이미지/스캔 PDF는 처리되지 않습니다.</p>
+
+    <label class="dropzone" id="dropzone">
+      <strong>여기로 드래그하거나 클릭해서 선택</strong>
+      <p>여러 파일을 한 번에 올릴 수 있습니다.</p>
+      <input type="file" id="file-input" multiple
+             accept=".xlsx,.xls,.html,.pdf,.jpg,.jpeg,.png" />
+    </label>
+
+    <div class="file-list" id="file-list"></div>
+
+    <div class="actions">
+      <button class="primary" id="submit-btn" disabled>변환</button>
+      <button class="ghost" id="clear-btn">초기화</button>
+      <span id="loading" style="display:none; color: var(--muted); font-size: 13px;">
+        <span class="spinner"></span> 변환 중...
+      </span>
+    </div>
+
+    <div class="status-area" id="status-area"></div>
+  </div>
+
+  <script>
+    const dz = document.getElementById('dropzone');
+    const input = document.getElementById('file-input');
+    const list = document.getElementById('file-list');
+    const submit = document.getElementById('submit-btn');
+    const clear = document.getElementById('clear-btn');
+    const loading = document.getElementById('loading');
+    const status = document.getElementById('status-area');
+
+    /** @type {File[]} */
+    let files = [];
+
+    function render() {
+      list.innerHTML = '';
+      files.forEach((f, i) => {
+        const row = document.createElement('div');
+        row.className = 'file-item';
+        row.innerHTML = `
+          <span class="name">${f.name}</span>
+          <span style="color: var(--muted); font-size: 12px;">${(f.size/1024).toFixed(0)} KB</span>
+          <button class="remove" data-i="${i}" title="제거">×</button>
+        `;
+        list.appendChild(row);
+      });
+      submit.disabled = files.length === 0;
+    }
+
+    function addFiles(newFiles) {
+      for (const f of newFiles) {
+        if (!files.some(x => x.name === f.name && x.size === f.size)) {
+          files.push(f);
+        }
+      }
+      render();
+    }
+
+    dz.addEventListener('click', () => input.click());
+    input.addEventListener('change', e => addFiles(e.target.files));
+    list.addEventListener('click', e => {
+      const btn = e.target.closest('.remove');
+      if (!btn) return;
+      files.splice(+btn.dataset.i, 1);
+      render();
+    });
+    ['dragover'].forEach(ev => dz.addEventListener(ev, e => {
+      e.preventDefault();
+      dz.classList.add('drag');
+    }));
+    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => {
+      e.preventDefault();
+      dz.classList.remove('drag');
+    }));
+    dz.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+
+    clear.addEventListener('click', () => {
+      files = []; render(); status.innerHTML = ''; input.value = '';
+    });
+
+    const STATUS_TAGS = {
+      ok:                  { cls: 'ok',    text: '변환됨' },
+      skipped_image:       { cls: 'warn',  text: '이미지(처리불가)' },
+      skipped_scanned:     { cls: 'warn',  text: '스캔본(처리불가)' },
+      skipped_unsupported: { cls: 'warn',  text: '미지원' },
+      skipped_reference:   { cls: 'warn',  text: '참조파일' },
+      failed:              { cls: 'err',   text: '실패' },
+    };
+
+    submit.addEventListener('click', async () => {
+      if (files.length === 0) return;
+      loading.style.display = 'inline';
+      submit.disabled = true;
+      status.innerHTML = '';
+
+      const fd = new FormData();
+      files.forEach(f => fd.append('files', f, f.name));
+
+      try {
+        const res = await fetch('/api/convert', { method: 'POST', body: fd });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(`서버 오류: ${res.status} ${t}`);
+        }
+        const data = await res.json();
+        renderResults(data);
+      } catch (err) {
+        status.innerHTML = `<div class="status-card" style="color:var(--err)">오류: ${err.message}</div>`;
+      } finally {
+        loading.style.display = 'none';
+        submit.disabled = files.length === 0;
+      }
+    });
+
+    function renderResults(data) {
+      const parts = [];
+      if (data.download_id) {
+        parts.push(`
+          <div class="download-banner">
+            <span><strong>${data.total_rows}</strong>개 행이 변환되었습니다.</span>
+            <a href="/api/download/${data.download_id}" download>엑셀 다운로드</a>
+          </div>
+        `);
+      } else {
+        parts.push(`
+          <div class="status-card" style="color: var(--warn);">
+            변환된 행이 없습니다.
+          </div>
+        `);
+      }
+      parts.push('<div class="status-card"><h3>파일별 결과</h3><table>');
+      parts.push('<tr><th>파일</th><th>상태</th><th>발주날짜</th><th>발주업장</th><th style="text-align:right">행</th></tr>');
+      for (const r of data.summary) {
+        const t = STATUS_TAGS[r.status] || { cls: 'err', text: r.status };
+        parts.push(`
+          <tr>
+            <td>${escape(r.file)}</td>
+            <td><span class="tag ${t.cls}">${t.text}</span></td>
+            <td>${escape(r.date || '')}</td>
+            <td>${escape(r.business || '')}</td>
+            <td style="text-align:right">${r.lines || ''}</td>
+          </tr>
+        `);
+      }
+      parts.push('</table></div>');
+      status.innerHTML = parts.join('');
+    }
+
+    function escape(s) {
+      return String(s).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+  </script>
+</body>
+</html>
