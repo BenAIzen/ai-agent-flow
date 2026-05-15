@@ -193,8 +193,13 @@
       render();
     }
 
-    dz.addEventListener('click', () => input.click());
-    input.addEventListener('change', e => addFiles(e.target.files));
+    // <label> already forwards clicks to the nested <input>, so a manual
+    // dz.click() handler would fire input.click() twice and (on Windows
+    // Chrome/Edge) cause the file dialog to flash and close.
+    input.addEventListener('change', e => {
+      addFiles(e.target.files);
+      e.target.value = '';   // allow re-selecting the same file after removal
+    });
     list.addEventListener('click', e => {
       const btn = e.target.closest('.remove');
       if (!btn) return;
