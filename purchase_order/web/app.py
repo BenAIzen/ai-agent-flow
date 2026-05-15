@@ -122,8 +122,14 @@ async def convert(files: list[UploadFile] = File(...)) -> JSONResponse:
                 out.write(await uf.read())
 
             doc, status = _parse_uploaded(tmp_path)
-            entry: dict[str, Any] = {"file": uf.filename, "status": status, "lines": 0,
-                                      "date": "", "business": ""}
+            entry: dict[str, Any] = {
+                "file": uf.filename,
+                "status": status,
+                "date": "",
+                "business": "",
+                "line_count": 0,
+                "lines": [],
+            }
 
             if status != "ok" or doc is None:
                 summary.append(entry)
@@ -132,7 +138,17 @@ async def convert(files: list[UploadFile] = File(...)) -> JSONResponse:
             date, business = extract_metadata(tmp_path)
             entry["date"] = date
             entry["business"] = business
-            entry["lines"] = len(doc.lines)
+            entry["line_count"] = len(doc.lines)
+            entry["lines"] = [
+                {
+                    "품목코드": line.품목코드,
+                    "품명": line.품목명,
+                    "수량": line.수량,
+                    "단위": line.단위,
+                    "단가": line.단가,
+                }
+                for line in doc.lines
+            ]
             summary.append(entry)
 
             for line in doc.lines:
