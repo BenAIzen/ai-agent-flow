@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>발주서 변환기</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic",
+                   "Pretendard", system-ui, sans-serif;
+    }
+    [x-cloak] { display: none !important; }
+    /* hide scrollbar in expanded line tables */
+    .table-wrap { scrollbar-width: thin; }
+  </style>
+
+  <script>
+    // Status → badge classes + label
+    const STATUS_INFO = {
+      ok:                  { cls: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200', text: '변환됨' },
+      skipped_image:       { cls: 'bg-amber-100  text-amber-800   ring-1 ring-amber-200',    text: '이미지' },
+      skipped_scanned:     { cls: 'bg-amber-100  text-amber-800   ring-1 ring-amber-200',    text: '스캔본' },
+      skipped_unsupported: { cls: 'bg-slate-100  text-slate-700   ring-1 ring-slate-200',    text: '미지원' },
+      skipped_reference:   { cls: 'bg-slate-100  text-slate-700   ring-1 ring-slate-200',    text: '참조파일' },
+      failed:              { cls: 'bg-rose-100   text-rose-800    ring-1 ring-rose-200',     text: '실패' },
+    };
+
+    document.addEventListener('alpine:init', () => {
+      Alpine.store('toast', {
+        items: [],
+        push(message, kind = 'info', ttl = 3500) {
+          const id = Date.now() + Math.random();
+          this.items.push({ id, message, kind });
+          setTimeout(() => {
+            this.items = this.items.filter(t => t.id !== id);
+          }, ttl);
+        },
+      });
+    });
+
+    function appState() {
+      return {
+        files: [],
+        dragging: false,
+        loading: false,
+        progress: 0,
+        result: null,
+
+        addFiles(fileList) {
+          for (const f of fileList) {
+            if (!this.files.some(x => x.name === f.name && x.size === f.size)) {
+              this.files.push(f);
+            }
+          }
+        },
+        removeFile(i) { this.files.splice(i, 1); },
+        reset() {
+          this.files = [];
+          this.result = null;
+          if (this.$refs.picker) this.$refs.picker.value = '';
+        },
+        onPick(e) {
+          this.addFiles(e.target.files);
+          e.target.value = '';
+        },
+        onDrop(e) {
+          this.dragging = false;
+          this.addFiles(e.dataTransfer.files);
+        },
+
+        async convert() {
+          if (!this.files.length) return;
+          this.loading = true;
+          this.result = null;
+          this.progress = 0;
+
+          const fd = new FormData();
+          this.files.forEach(f => fd.append('files', f, f.name));
+
+          try {
+            const data = await this._uploadWithProgress(fd);
+            this.result = data;
+
+            const ok = data.summary.filter(r => r.status === 'ok').length;
+            const skipped = data.summary.length - ok;
+            if (data.total_rows > 0) {
+              this.$store.toast.push(
+                `${ok}개 파일에서 ${data.total_rows}행 변환 완료`, 'success');
+            } else {
+              this.$store.toast.push('변환된 행이 없습니다', 'warn');
+            }
+            if (skipped > 0) {
+              this.$store.toast.push(
+                `${skipped}개 파일이 처리되지 않았습니다`, 'warn', 5000);
+            }
+          } catch (err) {
+            this.$store.toast.push(`오류: ${err.message}`, 'error', 6000);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        _uploadWithProgress(formData) {
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = (e) => {
+              if (e.lengthComputable) {
+                this.progress = Math.round((e.loaded / e.total) * 100);
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try { resolve(JSON.parse(xhr.responseText)); }
+                catch (_) { reject(new Error('응답 파싱 실패')); }
+              } else {
+                reject(new Error(`HTTP ${xhr.status}`));
+              }
+            };
+            xhr.onerror = () => reject(new Error('네트워크 오류'));
+            xhr.open('POST', '/api/convert');
+            xhr.send(formData);
+          });
+        },
+
+        get downloadUrl() {
+          return this.result?.download_id
+            ? `/api/download/${this.result.download_id}`
+            : '';
+        },
+        get okFiles() {
+          return this.result?.summary.filter(r => r.status === 'ok') ?? [];
+        },
+        statusInfo(s) {
+          return STATUS_INFO[s] || { cls: 'bg-slate-100 text-slate-700', text: s };
+        },
+        formatNum(v) {
+          if (v === null || v === undefined || v === '') return '';
+          if (typeof v === 'number') return v.toLocaleString();
+          return v;
+        },
+      };
+    }
+  </script>
+</head>
+
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased"
+      x-data="appState()" x-cloak>
+
+  <!-- Toast container -->
+  <div class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
+    <template x-for="t in $store.toast.items" :key="t.id">
+      <div class="pointer-events-auto rounded-lg shadow-lg px-4 py-3 text-sm max-w-sm border"
+           :class="{
+             'bg-emerald-50 border-emerald-200 text-emerald-900': t.kind === 'success',
+             'bg-amber-50 border-amber-200 text-amber-900': t.kind === 'warn',
+             'bg-rose-50 border-rose-200 text-rose-900': t.kind === 'error',
+             'bg-white border-slate-200 text-slate-800': t.kind === 'info',
+           }"
+           x-text="t.message"
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0 -translate-y-2"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0">
+      </div>
+    </template>
+  </div>
+
+  <div class="max-w-4xl mx-auto px-5 py-10">
+
+    <!-- Header -->
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-900 tracking-tight">발주서 변환기</h1>
+      <p class="text-slate-500 mt-2 leading-relaxed">
+        발주서 파일(xlsx · xls · html · pdf)을 업로드하면 표준 양식 엑셀로 합쳐서 다운로드합니다.
+        이미지와 스캔 PDF는 처리되지 않습니다.
+      </p>
+    </header>
+
+    <!-- Dropzone (label wraps input so native click works) -->
+    <label
+      class="block cursor-pointer rounded-2xl border-2 border-dashed
+             px-8 py-12 text-center bg-white transition-colors duration-150
+             hover:border-blue-400"
+      :class="dragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300'"
+      @drop.prevent="onDrop"
+      @dragover.prevent="dragging = true"
+      @dragleave.prevent="dragging = false">
+      <svg class="mx-auto w-12 h-12 text-slate-400" fill="none"
+           stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+      </svg>
+      <p class="mt-3 text-base font-semibold text-slate-700">
+        여기로 드래그하거나 클릭해서 선택
+      </p>
+      <p class="text-sm text-slate-500 mt-1">여러 파일을 한 번에 올릴 수 있습니다.</p>
+      <input type="file" multiple class="hidden"
+             accept=".xlsx,.xls,.html,.pdf,.jpg,.jpeg,.png"
+             x-ref="picker" @change="onPick" />
+    </label>
+
+    <!-- File chips -->
+    <div class="mt-4 flex flex-wrap gap-2"
+         x-show="files.length"
+         x-transition.opacity>
+      <template x-for="(f, i) in files" :key="f.name + f.size">
+        <div class="inline-flex items-center gap-2 bg-white border border-slate-200
+                    rounded-lg pl-3 pr-2 py-1.5 text-sm shadow-sm">
+          <span class="font-medium text-slate-700 truncate max-w-[200px]" x-text="f.name"></span>
+          <span class="text-xs text-slate-400 tabular-nums"
+                x-text="(f.size/1024).toFixed(0) + ' KB'"></span>
+          <button @click="removeFile(i)" :disabled="loading"
+                  class="text-slate-400 hover:text-rose-500 disabled:opacity-30 p-0.5 rounded">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                    d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="mt-6 flex items-center gap-3">
+      <button @click="convert" :disabled="!files.length || loading"
+              class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300
+                     text-white font-semibold rounded-lg px-6 py-2.5 text-sm
+                     transition-colors min-w-[110px] inline-flex items-center justify-center gap-2">
+        <span x-show="!loading">변환</span>
+        <template x-if="loading">
+          <span class="inline-flex items-center gap-2">
+            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"
+                      class="opacity-25" />
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" class="opacity-75" />
+            </svg>
+            <span x-text="progress > 0 && progress < 100
+                          ? `업로드 ${progress}%`
+                          : '변환 중...'"></span>
+          </span>
+        </template>
+      </button>
+      <button @click="reset" :disabled="loading"
+              class="text-slate-600 hover:text-slate-800 border border-slate-300
+                     bg-white hover:bg-slate-50 rounded-lg px-4 py-2 text-sm
+                     transition-colors disabled:opacity-50">
+        초기화
+      </button>
+      <div class="flex-1"></div>
+      <div class="text-sm text-slate-400 tabular-nums"
+           x-show="files.length"
+           x-text="`${files.length}개 파일`"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="mt-8" x-show="result" x-transition.opacity>
+
+      <!-- Download banner -->
+      <div x-show="result && result.download_id"
+           class="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50
+                  border border-emerald-200 p-5 flex items-center justify-between mb-4 shadow-sm">
+        <div>
+          <p class="font-semibold text-emerald-900 text-lg">
+            총 <span x-text="result?.total_rows?.toLocaleString()"></span>개 행 변환 완료
+          </p>
+          <p class="text-sm text-emerald-700/80 mt-1">
+            <span x-text="okFiles.length"></span>개 파일에서 추출됨
+          </p>
+        </div>
+        <a :href="downloadUrl" download
+           class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold
+                  rounded-lg px-5 py-2.5 text-sm transition-colors inline-flex items-center gap-2 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          엑셀 다운로드
+        </a>
+      </div>
+
+      <!-- Empty-result banner -->
+      <div x-show="result && !result.download_id"
+           class="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-4 text-amber-900 text-sm">
+        변환된 행이 없습니다. 아래 파일별 결과를 확인하세요.
+      </div>
+
+      <!-- Per-file cards -->
+      <div class="space-y-2">
+        <template x-for="r in result?.summary" :key="r.file">
+          <div class="rounded-xl bg-white border border-slate-200 overflow-hidden shadow-sm"
+               x-data="{ open: false }">
+            <button @click="open = !open"
+                    :disabled="r.status !== 'ok'"
+                    class="w-full px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50
+                           text-left transition-colors disabled:cursor-default disabled:hover:bg-white">
+              <svg class="w-4 h-4 text-slate-400 transition-transform shrink-0"
+                   :class="open ? 'rotate-90' : ''"
+                   :style="r.status !== 'ok' ? 'opacity:0' : ''"
+                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5l7 7-7 7"/>
+              </svg>
+              <span class="flex-1 font-medium text-slate-800 truncate" x-text="r.file"></span>
+              <span class="text-sm text-slate-500 truncate max-w-[180px]"
+                    x-text="r.business || (r.status === 'ok' ? '—' : '')"></span>
+              <span class="text-xs text-slate-400 tabular-nums w-20 text-right"
+                    x-text="r.date || ''"></span>
+              <span class="text-sm font-semibold text-slate-700 tabular-nums w-14 text-right"
+                    x-text="r.line_count > 0 ? r.line_count + '행' : ''"></span>
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                    :class="statusInfo(r.status).cls"
+                    x-text="statusInfo(r.status).text"></span>
+            </button>
+
+            <!-- Expanded preview -->
+            <div x-show="open && r.lines && r.lines.length"
+                 x-collapse.duration.200ms
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100">
+              <div class="border-t border-slate-100 bg-slate-50 max-h-96 overflow-y-auto table-wrap">
+                <table class="w-full text-sm">
+                  <thead class="text-xs text-slate-500 uppercase tracking-wide bg-slate-100 sticky top-0">
+                    <tr>
+                      <th class="text-left px-4 py-2.5 font-medium">품목코드</th>
+                      <th class="text-left px-4 py-2.5 font-medium">품명</th>
+                      <th class="text-right px-4 py-2.5 font-medium">수량</th>
+                      <th class="text-left px-4 py-2.5 font-medium">단위</th>
+                      <th class="text-right px-4 py-2.5 font-medium">단가</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="(line, idx) in r.lines" :key="idx">
+                      <tr class="border-t border-slate-200 hover:bg-white transition-colors">
+                        <td class="px-4 py-2 text-slate-500 text-xs tabular-nums"
+                            x-text="line.품목코드 || '—'"></td>
+                        <td class="px-4 py-2 text-slate-800" x-text="line.품명"></td>
+                        <td class="px-4 py-2 text-right tabular-nums text-slate-700"
+                            x-text="formatNum(line.수량)"></td>
+                        <td class="px-4 py-2 text-slate-500 text-xs" x-text="line.단위 || ''"></td>
+                        <td class="px-4 py-2 text-right tabular-nums text-slate-700"
+                            x-text="formatNum(line.단가)"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
