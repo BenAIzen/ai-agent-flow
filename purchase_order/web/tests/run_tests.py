@@ -24,7 +24,7 @@ WEB_DIR = HERE.parent
 INPUT_DIR = WEB_DIR.parent / "input"
 
 sys.path.insert(0, str(WEB_DIR))
-from extractors import extract_metadata  # noqa: E402
+from apps.converter.extractors import extract_metadata  # noqa: E402
 
 
 def main() -> int:

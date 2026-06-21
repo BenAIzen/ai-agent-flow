@@ -42,7 +42,7 @@ try:
 except ImportError:
     pdfplumber = None
 
-from rules import (
+from .rules import (
     BUSINESS_NEGATIVE_PREFIX,
     DATE_RULES,
     HEADER_WORDS,

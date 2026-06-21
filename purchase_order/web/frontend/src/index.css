@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+html, body, #root { height: 100%; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic",
+               "Pretendard", system-ui, sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 인쇄 시 사이드바/필터 제거, 명세서만 출력 */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; }
+  main { padding: 0 !important; overflow: visible !important; }
+}
