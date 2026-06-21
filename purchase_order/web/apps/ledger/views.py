@@ -14,7 +14,6 @@ GET /api/ledger/payable?from=YYYY-MM-DD&to=YYYY-MM-DD
 
 from __future__ import annotations
 
-from datetime import date
 from decimal import Decimal
 
 from django.db.models import Sum

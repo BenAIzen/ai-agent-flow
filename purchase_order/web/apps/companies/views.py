@@ -1,18 +1,18 @@
 from django.db.models import Q
-from rest_framework import status, viewsets
-from rest_framework.response import Response
+from rest_framework import viewsets
 
 from apps.accounts.models import UserCompany
 
+from .mixins import SoftDeleteMixin
 from .models import Company
 from .serializers import CompanySerializer
 
 
-class CompanyViewSet(viewsets.ModelViewSet):
+class CompanyViewSet(SoftDeleteMixin, viewsets.ModelViewSet):
     """회사 CRUD.
 
     필터: ?q=<search> — name / biz_no / rep_name 부분 일치.
-    DELETE는 soft-delete (is_active=False).
+    DELETE는 soft-delete (is_active=False) — SoftDeleteMixin 적용.
     """
 
     serializer_class = CompanySerializer
@@ -32,9 +32,3 @@ class CompanyViewSet(viewsets.ModelViewSet):
             user=self.request.user, company=company,
             defaults={"role": "admin"},
         )
-
-    def destroy(self, request, *args, **kwargs):
-        c = self.get_object()
-        c.is_active = False
-        c.save(update_fields=["is_active"])
-        return Response(status=status.HTTP_204_NO_CONTENT)

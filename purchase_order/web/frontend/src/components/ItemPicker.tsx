@@ -11,9 +11,11 @@ interface Props {
   value: number | null
   onChange: (it: Item) => void
   placeholder?: string
+  /** 지정 시 해당 거래처에 속한 품목만 표시. null/undefined면 전체. */
+  partnerId?: number | null
 }
 
-export function ItemPicker({ value, onChange, placeholder = '품목 선택...' }: Props) {
+export function ItemPicker({ value, onChange, placeholder = '품목 선택...', partnerId }: Props) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [label, setLabel] = useState('')
@@ -27,8 +29,14 @@ export function ItemPicker({ value, onChange, placeholder = '품목 선택...' }
   }, [value])
 
   const { data: results = [] } = useQuery({
-    queryKey: ['items-picker', search],
-    queryFn: () => api<Item[]>(`/api/items${search ? `?q=${encodeURIComponent(search)}` : ''}`),
+    queryKey: ['items-picker', search, partnerId ?? null],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (search) params.set('q', search)
+      if (partnerId) params.set('partner', String(partnerId))
+      const qs = params.toString()
+      return api<Item[]>(`/api/items${qs ? `?${qs}` : ''}`)
+    },
     enabled: open,
     staleTime: 30_000,
   })
@@ -44,6 +52,11 @@ export function ItemPicker({ value, onChange, placeholder = '품목 선택...' }
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="품목 선택">
+        {partnerId && (
+          <div className="mb-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+            선택된 거래처의 품목만 표시됩니다.
+          </div>
+        )}
         <div className="relative mb-3">
           <input
             type="text" autoFocus value={search} onChange={(e) => setSearch(e.target.value)}
@@ -69,7 +82,9 @@ export function ItemPicker({ value, onChange, placeholder = '품목 선택...' }
             </button>
           ))}
           {!results.length && (
-            <div className="text-center text-slate-400 py-6 text-sm">검색 결과 없음</div>
+            <div className="text-center text-slate-400 py-6 text-sm">
+              {partnerId ? '이 거래처의 품목이 없습니다. 품목관리에서 먼저 등록하세요.' : '검색 결과 없음'}
+            </div>
           )}
         </div>
       </Modal>

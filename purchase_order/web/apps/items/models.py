@@ -27,6 +27,13 @@ class Item(models.Model):
         "companies.Company", on_delete=models.CASCADE,
         related_name="items", verbose_name="소속 회사",
     )
+    partner = models.ForeignKey(
+        "partners.Partner", on_delete=models.PROTECT,
+        related_name="supplied_items",
+        null=True, blank=True,
+        verbose_name="거래처",
+        help_text="이 품목이 속한 거래처. 신규 품목은 필수, 기존 데이터는 NULL 허용.",
+    )
 
     code = models.CharField("품목코드", max_length=30)
     name = models.CharField("품명", max_length=120)
@@ -69,8 +76,15 @@ class Item(models.Model):
             models.UniqueConstraint(
                 fields=["company", "code"], name="uq_item_company_code"
             ),
+            # 같은 거래처 내에서 같은 품명 중복 방지 (NULL partner는 MySQL 기본
+            # 동작상 다중 허용 — 기존 데이터 보존).
+            models.UniqueConstraint(
+                fields=["company", "partner", "name"],
+                name="uq_item_company_partner_name",
+            ),
         ]
         indexes = [
+            models.Index(fields=["company", "partner"]),
             models.Index(fields=["company", "name"]),
         ]
 

@@ -1,14 +1,16 @@
 import { Fragment, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, Download, Loader2, Plus, Trash2 } from 'lucide-react'
 
 import { api } from '@/api/client'
+import { useAuth } from '@/stores/auth'
 import type { DeliveryOrder, Item } from '@/types/models'
 import { useToast } from '@/stores/toast'
 import { Modal } from '@/components/Modal'
 import { SearchBox } from '@/components/SearchBox'
 import { PartnerPicker } from '@/components/PartnerPicker'
 import { ItemPicker } from '@/components/ItemPicker'
+import { DateRangeBar } from '@/components/DateRangeBar'
 import { cn, firstOfMonthISO, formatNum, todayISO } from '@/lib/utils'
 
 interface LineForm {
@@ -50,11 +52,43 @@ export function DeliveryTab() {
   const qc = useQueryClient()
   const push = useToast((s) => s.push)
 
+  const { token, company } = useAuth()
   const [dateFrom, setDateFrom] = useState(firstOfMonthISO())
   const [dateTo, setDateTo] = useState(todayISO())
   const [search, setSearch] = useState('')
   const [edit, setEdit] = useState<OrderForm | null>(null)
   const [expanded, setExpanded] = useState<number | null>(null)
+  const [downloading, setDownloading] = useState(false)
+
+  async function downloadExcel() {
+    if (!orders.length) { push('내보낼 출고전표가 없습니다', 'warn'); return }
+    setDownloading(true)
+    try {
+      const params = new URLSearchParams({ from: dateFrom, to: dateTo })
+      if (search) params.set('q', search)
+      const res = await fetch(`/api/delivery/export?${params}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(company ? { 'X-Company-Id': String(company.id) } : {}),
+        },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `출고처리_${dateFrom}_${dateTo}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      push('엑셀 다운로드 완료', 'success')
+    } catch (e) {
+      push(`다운로드 실패: ${e instanceof Error ? e.message : e}`, 'error', 6000)
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const { data: orders = [] } = useQuery({
     queryKey: ['deliveries', dateFrom, dateTo, search],
@@ -128,23 +162,22 @@ export function DeliveryTab() {
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-5 flex items-center gap-4">
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex-1">출고처리</h2>
+        <button onClick={downloadExcel} disabled={downloading || !orders.length}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
+          {downloading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Download className="w-4 h-4"/>}
+          엑셀 다운로드
+        </button>
         <button onClick={() => setEdit(blankOrder())}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
           <Plus className="w-4 h-4" /> 출고전표 추가
         </button>
       </header>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-3 mb-3 flex items-center gap-3 flex-wrap">
-        <label className="text-xs font-semibold text-slate-500">기간</label>
-        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-               className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm tabular-nums"/>
-        <span className="text-slate-400">~</span>
-        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-               className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm tabular-nums"/>
+      <DateRangeBar from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo}>
         <SearchBox value={search} onChange={setSearch}
                    placeholder="출고번호, 거래처, 적요 검색" className="flex-1 min-w-[200px]"/>
         <span className="text-xs text-slate-400 tabular-nums">{orders.length}건</span>
-      </div>
+      </DateRangeBar>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <table className="w-full text-sm">
@@ -300,6 +333,7 @@ export function DeliveryTab() {
                       <td className="px-2 py-1">
                         <ItemPicker
                           value={line.item}
+                          partnerId={edit.partner}
                           onChange={(it: Item) => {
                             updateLine(i, {
                               item: it.id, item_code: it.code, item_name: it.name,

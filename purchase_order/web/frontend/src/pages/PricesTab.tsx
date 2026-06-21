@@ -183,7 +183,11 @@ export function PricesTab() {
             <div>
               <label className="text-xs font-semibold text-slate-600 mb-1 block">품목 *</label>
               <div className="border border-slate-300 rounded-lg">
-                <ItemPicker value={edit.item} onChange={(it) => setEdit({ ...edit, item: it.id })} />
+                <ItemPicker
+                  value={edit.item}
+                  onChange={(it) => setEdit({ ...edit, item: it.id })}
+                  partnerId={edit.partner}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

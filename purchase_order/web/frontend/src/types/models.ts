@@ -33,6 +33,9 @@ export interface PartnerAccount {
 export interface Item {
   id: number
   code: string
+  partner: number | null
+  partner_name: string | null
+  partner_code: string | null
   name: string
   spec: string
   procure_type: string
@@ -40,7 +43,6 @@ export interface Item {
   unit_in: string
   unit_out: string
   unit_stock: string
-  standard_cost: string
   invoice_print_name: string
   memo: string
   is_active: boolean
