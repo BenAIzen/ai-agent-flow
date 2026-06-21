@@ -1,7 +1,6 @@
 import io
 
 import openpyxl
-from django.db.models import Q
 from django.http import HttpResponse
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -9,14 +8,17 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.companies.mixins import CompanyScopedMixin, get_request_company
+from apps.companies.mixins import (
+    CompanyScopedMixin, DateRangeFilterMixin, get_request_company,
+)
 from apps.prices.models import lookup_sale_price
 
 from .models import DeliveryOrder
 from .serializers import DeliveryOrderSerializer
 
 
-class DeliveryOrderViewSet(CompanyScopedMixin, viewsets.ModelViewSet):
+class DeliveryOrderViewSet(DateRangeFilterMixin, CompanyScopedMixin,
+                           viewsets.ModelViewSet):
     serializer_class = DeliveryOrderSerializer
     queryset = (
         DeliveryOrder.objects
@@ -25,22 +27,9 @@ class DeliveryOrderViewSet(CompanyScopedMixin, viewsets.ModelViewSet):
         .all()
     )
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        date_from = self.request.query_params.get("from")
-        date_to = self.request.query_params.get("to")
-        partner = self.request.query_params.get("partner")
-        q = self.request.query_params.get("q")
-        if date_from:
-            qs = qs.filter(order_date__gte=date_from)
-        if date_to:
-            qs = qs.filter(order_date__lte=date_to)
-        if partner:
-            qs = qs.filter(partner_id=partner)
-        if q:
-            qs = qs.filter(Q(order_no__icontains=q) | Q(partner__name__icontains=q)
-                           | Q(note__icontains=q))
-        return qs
+    # DateRangeFilterMixin 설정
+    date_field = "order_date"
+    search_fields = ["order_no", "note"]
 
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request):

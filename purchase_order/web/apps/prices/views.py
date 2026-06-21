@@ -2,7 +2,6 @@ from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 
 from apps.companies.mixins import get_request_company
-from apps.partners.models import Partner
 
 from .models import PartnerPrice
 from .serializers import PartnerPriceSerializer

@@ -7,6 +7,7 @@ import type { Partner } from '@/types/models'
 import { useToast } from '@/stores/toast'
 import { Modal } from '@/components/Modal'
 import { SearchBox } from '@/components/SearchBox'
+import { Field, inputCls, selectCls } from '@/components/Field'
 import { cn } from '@/lib/utils'
 
 type BizClass = 'customer' | 'vendor' | 'both'
@@ -33,17 +34,6 @@ const blankForm: PartnerForm = {
   vat_type: 'none', output_name: '', memo: '', is_active: true,
 }
 
-const inputCls  = 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
-const selectCls = inputCls + ' bg-white'
-
-function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
-  return (
-    <div className={full ? 'col-span-2' : undefined}>
-      <label className="text-xs font-semibold text-slate-600 mb-1 block">{label}</label>
-      {children}
-    </div>
-  )
-}
 
 type ActiveFilter = 'active' | 'inactive' | 'all'
 

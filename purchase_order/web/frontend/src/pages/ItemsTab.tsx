@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 
 import { api } from '@/api/client'
-import type { Item, Partner } from '@/types/models'
+import type { Item } from '@/types/models'
 import { useToast } from '@/stores/toast'
 import { Modal } from '@/components/Modal'
 import { SearchBox } from '@/components/SearchBox'
 import { PartnerPicker } from '@/components/PartnerPicker'
+import { Field, inputCls, selectCls } from '@/components/Field'
 
 interface ItemForm {
   id?: number
@@ -29,17 +30,6 @@ const blankForm: ItemForm = {
   invoice_print_name: '', memo: '', is_active: true,
 }
 
-const inputCls  = 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
-const selectCls = inputCls + ' bg-white'
-
-function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
-  return (
-    <div className={full ? 'col-span-2' : undefined}>
-      <label className="text-xs font-semibold text-slate-600 mb-1 block">{label}</label>
-      {children}
-    </div>
-  )
-}
 
 export function ItemsTab() {
   const qc = useQueryClient()
@@ -95,10 +85,10 @@ export function ItemsTab() {
       <div className="bg-white rounded-xl border border-slate-200 p-3 mb-3 flex items-center gap-3 flex-wrap">
         <SearchBox value={search} onChange={setSearch} placeholder="품목코드, 품명, 규격, 거래처명 검색" className="flex-1 min-w-[200px]" />
         <div className="flex items-center gap-1">
-          <PartnerFilterPicker
+          <PartnerPicker
             value={partnerFilter}
-            label={partnerFilterLabel}
-            onChange={(p) => { setPartnerFilter(p?.id ?? null); setPartnerFilterLabel(p ? `${p.code} ${p.name}` : '') }}
+            onChange={(p) => { setPartnerFilter(p.id); setPartnerFilterLabel(`${p.code} ${p.name}`) }}
+            placeholder={partnerFilterLabel || '거래처로 필터'}
           />
           {partnerFilter && (
             <button onClick={() => { setPartnerFilter(null); setPartnerFilterLabel('') }}
@@ -214,17 +204,3 @@ export function ItemsTab() {
   )
 }
 
-/** 필터 바 전용 — PartnerPicker가 onChange로 Partner 객체를 받으므로 wrapper. */
-function PartnerFilterPicker({
-  value, label, onChange,
-}: { value: number | null; label: string; onChange: (p: Partner | null) => void }) {
-  return (
-    <div className="inline-block">
-      <PartnerPicker
-        value={value}
-        onChange={(p) => onChange(p)}
-        placeholder={label || '거래처로 필터'}
-      />
-    </div>
-  )
-}

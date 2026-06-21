@@ -4,32 +4,22 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.companies.codes import next_company_code, normalize_name
 from apps.companies.mixins import CompanyScopedMixin, get_request_company
 from apps.partners.models import Partner
-from apps.partners.views import next_partner_code, normalize_partner_name
+from apps.partners.views import next_partner_code
 
 from .models import Item
 from .serializers import ItemSerializer
 
 
+# 호환 이름. 새 코드는 codes.* 직접 사용.
 def next_item_code(company_id: int) -> str:
-    """회사 내 다음 품목 코드(3자리 0패딩) 채번.
-
-    숫자형 코드 중 최대값 + 1. 비숫자 코드(legacy)는 무시.
-    """
-    rows = Item.objects.filter(company_id=company_id).values_list("code", flat=True)
-    max_n = 0
-    for c in rows:
-        if c and c.isdigit():
-            n = int(c)
-            if n > max_n:
-                max_n = n
-    return f"{max_n + 1:03d}"
+    return next_company_code(Item, company_id)
 
 
 def normalize_item_name(name: str) -> str:
-    """이름 매칭용 정규화: 공백 압축, 양끝 공백 제거. 대소문자는 보존."""
-    return " ".join((name or "").split())
+    return normalize_name(name)
 
 
 def resolve_or_create_partner(

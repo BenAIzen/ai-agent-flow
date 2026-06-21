@@ -10,6 +10,7 @@ import { Modal } from '@/components/Modal'
 import { SearchBox } from '@/components/SearchBox'
 import { PartnerPicker } from '@/components/PartnerPicker'
 import { ItemPicker } from '@/components/ItemPicker'
+import { DateRangeBar } from '@/components/DateRangeBar'
 import { cn, firstOfMonthISO, formatNum, todayISO } from '@/lib/utils'
 
 interface LineForm {
@@ -172,17 +173,11 @@ export function DeliveryTab() {
         </button>
       </header>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-3 mb-3 flex items-center gap-3 flex-wrap">
-        <label className="text-xs font-semibold text-slate-500">기간</label>
-        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-               className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm tabular-nums"/>
-        <span className="text-slate-400">~</span>
-        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-               className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm tabular-nums"/>
+      <DateRangeBar from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo}>
         <SearchBox value={search} onChange={setSearch}
                    placeholder="출고번호, 거래처, 적요 검색" className="flex-1 min-w-[200px]"/>
         <span className="text-xs text-slate-400 tabular-nums">{orders.length}건</span>
-      </div>
+      </DateRangeBar>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <table className="w-full text-sm">

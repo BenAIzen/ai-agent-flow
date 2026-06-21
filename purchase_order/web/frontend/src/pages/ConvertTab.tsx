@@ -4,6 +4,7 @@ import { ChevronRight, Download, Loader2, PackagePlus, UploadCloud, X } from 'lu
 import { api } from '@/api/client'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/stores/toast'
+import { Badge, Metric } from '@/components/Badge'
 import { cn, formatNum } from '@/lib/utils'
 
 interface Line {
@@ -733,19 +734,6 @@ function SimpleRow({
       </td>
       {children}
     </tr>
-  )
-}
-
-function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 ring-1 ring-rose-200', className)}>{children}</span>
-}
-
-function Metric({ label, n }: { label: string; n: number }) {
-  return (
-    <div className="bg-white/60 rounded-lg py-2">
-      <div className="text-xs text-emerald-700/70">{label}</div>
-      <div className="text-xl font-bold tabular-nums">{n}</div>
-    </div>
   )
 }
 
