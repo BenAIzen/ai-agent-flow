@@ -12,7 +12,7 @@ export function Field({
 
 /** 모든 텍스트/숫자 입력 공통 클래스. */
 export const inputCls =
-  'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+  'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100'
 
 /** select 공통 클래스 (배경색 추가). */
 export const selectCls = inputCls + ' bg-white'

@@ -97,7 +97,7 @@ export function CompanySelectPage() {
             <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
           </div>
           <button onClick={() => setOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold
                              rounded-lg px-4 py-2.5 inline-flex items-center gap-1.5">
             <Plus className="w-4 h-4" /> 회사 추가
           </button>
@@ -190,7 +190,7 @@ export function CompanySelectPage() {
             <button type="button" onClick={() => setOpen(false)}
                     className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
             <button type="submit" disabled={!form.name}
-                    className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-lg">
+                    className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 disabled:bg-blue-300 text-white font-semibold rounded-lg">
               추가
             </button>
           </div>

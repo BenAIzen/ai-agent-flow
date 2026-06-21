@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronRight, Download, Loader2, PackagePlus, UploadCloud, X } from 'lucide-react'
+import { ArrowLeftRight, ChevronRight, Download, Loader2, PackagePlus, UploadCloud, X } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { useAuth } from '@/stores/auth'
@@ -286,12 +286,15 @@ export function ConvertTab() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <header className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">발주서 변환기</h2>
-        <p className="text-slate-500 mt-1.5 text-sm leading-relaxed">
-          발주서 파일(xlsx · xls · html · pdf)을 업로드하면 표준 양식 엑셀로 합쳐서 다운로드합니다.
-          이미지와 스캔 PDF는 처리되지 않습니다.
-        </p>
+      <header className="mb-6 flex items-start gap-3">
+        <ArrowLeftRight className="w-6 h-6 text-emerald-600 mt-0.5"/>
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">발주서 변환기</h2>
+          <p className="text-slate-500 mt-1.5 text-sm leading-relaxed">
+            발주서 파일(xlsx · xls · html · pdf)을 업로드하면 표준 양식 엑셀로 합쳐서 다운로드합니다.
+            이미지와 스캔 PDF는 처리되지 않습니다.
+          </p>
+        </div>
       </header>
 
       <div
@@ -337,7 +340,7 @@ export function ConvertTab() {
 
       <div className="mt-6 flex items-center gap-3">
         <button onClick={convert} disabled={!files.length || loading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-lg px-6 py-2.5 text-sm min-w-[110px] inline-flex items-center justify-center gap-2">
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-blue-300 text-white font-semibold rounded-lg px-6 py-2.5 text-sm min-w-[110px] inline-flex items-center justify-center gap-2">
           {loading ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="animate-spin h-4 w-4" />
@@ -684,7 +687,7 @@ function ReviewPanel(p: ReviewProps) {
         </span>
         <div className="flex-1"/>
         <button onClick={p.onCommit} disabled={p.committing || totalSelected === 0}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-2">
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-2">
           {p.committing ? <Loader2 className="animate-spin h-4 w-4"/> : <PackagePlus className="w-4 h-4"/>}
           확인 추가 ({totalSelected}건)
         </button>

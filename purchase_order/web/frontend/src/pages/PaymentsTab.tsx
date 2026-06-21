@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { CreditCard, Plus } from 'lucide-react'
 
 import { api } from '@/api/client'
 import type { Payment } from '@/types/models'
@@ -73,6 +73,7 @@ export function PaymentsTab() {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-5 flex items-center gap-4">
+        <CreditCard className="w-6 h-6 text-emerald-600"/>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex-1">지급등록</h2>
         <button onClick={() => setEdit(blankForm())}
                 className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
