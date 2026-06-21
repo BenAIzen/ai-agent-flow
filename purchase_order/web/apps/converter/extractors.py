@@ -135,12 +135,16 @@ def _cell_to_iso(v: object) -> str:
 
 
 def extract_date_from_text(text: str) -> str:
-    """Apply DATE_RULES in priority order; return first match as ISO."""
+    """Apply DATE_RULES in priority order; return LAST match as ISO.
+
+    PO 문서는 보통 위에서부터 PO DATE / PR DATE / DELIVERY DATE 순으로 나오는데
+    우리가 원하는 건 출고일(DELIVERY DATE)이라 마지막 매치를 사용합니다.
+    """
     if not text:
         return ""
     for rule in DATE_RULES:
-        m = re.search(rule.pattern, text, flags=re.IGNORECASE)
-        if m:
+        matches = list(re.finditer(rule.pattern, text, flags=re.IGNORECASE))
+        for m in reversed(matches):
             iso = _to_iso(m.group(1))
             if iso:
                 return iso

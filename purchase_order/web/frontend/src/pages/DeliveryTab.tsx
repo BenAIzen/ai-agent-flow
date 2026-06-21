@@ -300,6 +300,7 @@ export function DeliveryTab() {
                       <td className="px-2 py-1">
                         <ItemPicker
                           value={line.item}
+                          partnerId={edit.partner}
                           onChange={(it: Item) => {
                             updateLine(i, {
                               item: it.id, item_code: it.code, item_name: it.name,

@@ -1,6 +1,6 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight, Plus, RotateCcw } from 'lucide-react'
 
 import { api } from '@/api/client'
 import type { Partner } from '@/types/models'
@@ -45,24 +45,35 @@ function Field({ label, children, full }: { label: string; children: React.React
   )
 }
 
+type ActiveFilter = 'active' | 'inactive' | 'all'
+
 export function PartnersTab() {
   const qc = useQueryClient()
   const push = useToast((s) => s.push)
 
   const [search, setSearch] = useState('')
   const [bizClass, setBizClass] = useState('')
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('active')
   const [edit, setEdit] = useState<PartnerForm | null>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
-  const { data: rows = [] } = useQuery({
-    queryKey: ['partners', search, bizClass],
+  // 활성/비활성/전체: 서버는 active=1 또는 active=0(전체)만 지원.
+  // 'inactive'와 'all'은 active=0으로 받아온 뒤 클라이언트에서 한 번 더 필터.
+  const { data: rawRows = [] } = useQuery({
+    queryKey: ['partners', search, bizClass, activeFilter === 'active'],
     queryFn: () => {
       const params = new URLSearchParams()
       if (search) params.set('q', search)
       if (bizClass) params.set('biz_class', bizClass)
+      params.set('active', activeFilter === 'active' ? '1' : '0')
       return api<Partner[]>(`/api/partners?${params}`)
     },
   })
+
+  const rows = useMemo(() => {
+    if (activeFilter === 'inactive') return rawRows.filter((r) => !r.is_active)
+    return rawRows
+  }, [rawRows, activeFilter])
 
   const save = useMutation({
     mutationFn: (f: PartnerForm) =>
@@ -85,6 +96,16 @@ export function PartnersTab() {
     },
   })
 
+  const restore = useMutation({
+    mutationFn: (id: number) =>
+      api<Partner>(`/api/partners/${id}`, { method: 'PATCH', body: { is_active: true } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['partners'] })
+      push('복원됨', 'success')
+    },
+    onError: (e) => push(`복원 실패: ${e.message}`, 'error', 5000),
+  })
+
   function toggle(id: number) {
     setExpanded((cur) => {
       const next = new Set(cur)
@@ -103,9 +124,9 @@ export function PartnersTab() {
         </button>
       </header>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-3 mb-3 flex items-center gap-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-3 mb-3 flex items-center gap-3 flex-wrap">
         <SearchBox value={search} onChange={setSearch}
-                   placeholder="코드, 이름, 사업자번호, 대표자 검색" className="flex-1" />
+                   placeholder="코드, 이름, 사업자번호, 대표자 검색" className="flex-1 min-w-[200px]" />
         <select value={bizClass} onChange={(e) => setBizClass(e.target.value)}
                 className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
           <option value="">전체 구분</option>
@@ -113,6 +134,17 @@ export function PartnersTab() {
           <option value="vendor">매입처</option>
           <option value="both">매출+매입</option>
         </select>
+        <div className="inline-flex rounded-lg overflow-hidden border border-slate-300">
+          {(['active', 'inactive', 'all'] as const).map((f) => (
+            <button key={f} onClick={() => setActiveFilter(f)}
+                    className={cn('px-3 py-2 text-xs font-semibold transition',
+                      activeFilter === f
+                        ? f === 'inactive' ? 'bg-slate-600 text-white' : 'bg-blue-600 text-white'
+                        : 'bg-white text-slate-600 hover:bg-slate-50')}>
+              {f === 'active' ? '활성' : f === 'inactive' ? '비활성' : '전체'}
+            </button>
+          ))}
+        </div>
         <span className="text-xs text-slate-400 tabular-nums">{rows.length}건</span>
       </div>
 
@@ -134,7 +166,10 @@ export function PartnersTab() {
           <tbody>
             {rows.map((r) => (
               <Fragment key={r.id}>
-                <tr className="border-t border-slate-100 hover:bg-slate-50">
+                <tr className={cn(
+                  'border-t border-slate-100',
+                  r.is_active ? 'hover:bg-slate-50' : 'bg-slate-50/60 text-slate-400 hover:bg-slate-100/60',
+                )}>
                   <td className="px-3 py-2">
                     {r.accounts.length > 0 && (
                       <button onClick={() => toggle(r.id)} className="text-slate-400 hover:text-slate-700">
@@ -142,21 +177,34 @@ export function PartnersTab() {
                       </button>
                     )}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-slate-600 tabular-nums">{r.code}</td>
-                  <td className="px-3 py-2 font-medium text-slate-900">{r.name}</td>
+                  <td className={cn('px-3 py-2 font-mono text-xs tabular-nums', r.is_active ? 'text-slate-600' : 'text-slate-400')}>{r.code}</td>
+                  <td className={cn('px-3 py-2 font-medium', r.is_active ? 'text-slate-900' : 'text-slate-500 line-through')}>
+                    {r.name}
+                    {!r.is_active && (
+                      <span className="ml-2 inline-block text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-semibold no-underline">비활성</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
-                    <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold', BIZ_CLS[r.biz_class])}>
+                    <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold',
+                      r.is_active ? BIZ_CLS[r.biz_class] : 'bg-slate-200 text-slate-500')}>
                       {BIZ_LABEL[r.biz_class]}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-xs tabular-nums text-slate-600">{r.biz_no}</td>
-                  <td className="px-3 py-2 text-slate-700">{r.rep_name}</td>
-                  <td className="px-3 py-2 text-xs text-slate-500 tabular-nums">{r.tel}</td>
-                  <td className="px-3 py-2 text-center text-xs text-slate-500">{r.accounts.length || '—'}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-xs tabular-nums">{r.biz_no}</td>
+                  <td className="px-3 py-2">{r.rep_name}</td>
+                  <td className="px-3 py-2 text-xs tabular-nums">{r.tel}</td>
+                  <td className="px-3 py-2 text-center text-xs">{r.accounts.length || '—'}</td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
                     <button onClick={() => setEdit({ ...r })} className="text-blue-600 hover:text-blue-800 text-xs mr-2">수정</button>
-                    <button onClick={() => confirm(`'${r.name}'을 비활성화 할까요?`) && remove.mutate(r.id)}
-                            className="text-rose-500 hover:text-rose-700 text-xs">삭제</button>
+                    {r.is_active ? (
+                      <button onClick={() => confirm(`'${r.name}'을 비활성화 할까요?`) && remove.mutate(r.id)}
+                              className="text-rose-500 hover:text-rose-700 text-xs">삭제</button>
+                    ) : (
+                      <button onClick={() => restore.mutate(r.id)}
+                              className="text-emerald-600 hover:text-emerald-800 text-xs inline-flex items-center gap-0.5">
+                        <RotateCcw className="w-3 h-3" /> 복원
+                      </button>
+                    )}
                   </td>
                 </tr>
                 {expanded.has(r.id) && r.accounts.length > 0 && (
@@ -189,7 +237,9 @@ export function PartnersTab() {
               </Fragment>
             ))}
             {!rows.length && (
-              <tr><td colSpan={9} className="text-center text-slate-400 py-10 text-sm">거래처가 없습니다.</td></tr>
+              <tr><td colSpan={9} className="text-center text-slate-400 py-10 text-sm">
+                {activeFilter === 'inactive' ? '비활성 거래처가 없습니다.' : '거래처가 없습니다.'}
+              </td></tr>
             )}
           </tbody>
         </table>
@@ -198,7 +248,15 @@ export function PartnersTab() {
       <Modal open={!!edit} onClose={() => setEdit(null)} title={edit?.id ? '거래처 수정' : '거래처 추가'} size="xl">
         {edit && (
           <form onSubmit={(e) => { e.preventDefault(); save.mutate(edit) }} className="grid grid-cols-2 gap-3">
-            <Field label="거래처코드 *"><input value={edit.code} onChange={(e) => setEdit({ ...edit, code: e.target.value })} required className={inputCls + ' tabular-nums'}/></Field>
+            <Field label="거래처코드">
+              {edit.id ? (
+                <input value={edit.code} readOnly tabIndex={-1}
+                       className={inputCls + ' tabular-nums bg-slate-50 text-slate-500 cursor-not-allowed'}/>
+              ) : (
+                <input value="저장 시 자동 부여" readOnly tabIndex={-1}
+                       className={inputCls + ' bg-slate-50 text-slate-400 italic cursor-not-allowed'}/>
+              )}
+            </Field>
             <Field label="거래처명 *"><input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} required className={inputCls}/></Field>
             <Field label="구분">
               <select value={edit.biz_class} onChange={(e) => setEdit({ ...edit, biz_class: e.target.value as BizClass })} className={selectCls}>

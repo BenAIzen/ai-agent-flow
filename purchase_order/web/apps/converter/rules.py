@@ -40,11 +40,27 @@ class DateRule:
 # Ordered by priority. The first matching rule wins.
 #
 # WARNING — order matters:
-#   * 발주일자 / PO Date / PO Submit Date come first because they are the
-#     TRUE order date.
-#   * `일자` (line 53 below) has a lookbehind to avoid 입고일자 / 사용예정일.
-#   * Delivery-date rules are last — they are a fallback only.
+#   * Delivery / 납기일 / 배송일 rules come FIRST. ERP의 order_date 의미는
+#     "물건이 출고되는 날짜"이므로 PO 작성일이 아닌 배송일을 우선 사용.
+#   * PO Date / 발주일자 rules are fallback for PDFs without delivery label.
+#   * `일자` (lookbehind) avoids 입고일자 / 사용예정일.
 DATE_RULES: list[DateRule] = [
+    # ── Delivery date (출고일) — 우선순위 최상위 ──
+    DateRule("DELIVERY DATE (iso)",
+             r"DELIVERY\s*DATE\s*[:：]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
+    DateRule("Delivery Date (en-word)",
+             r"Delivery\s*Date\s*[:：]?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})"),
+    DateRule("Delivery date (iso)",
+             r"Delivery\s*date\s*[:：]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
+    DateRule("Delivery (bare iso)",
+             r"Delivery\s*[:：]\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
+    DateRule("배송 날짜 (iso)",
+             r"배\s*송\s*날\s*짜\s*[:：]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
+    DateRule("배송 날짜 (dmy)",
+             r"배\s*송\s*날\s*짜\s*[:：]?\s*(\d{1,2}[-/.]\d{1,2}[-/.]\d{4})"),
+    DateRule("납기일",
+             r"납\s*기\s*일\s*[:：]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
+    # ── PO / Order date — fallback ──
     DateRule("발주일자",
              r"발\s*주\s*일\s*자\s*[:：]?\s*(\d{4}[-/.\s]\d{1,2}[-/.\s]\d{1,2})"),
     DateRule("PO DATE",
@@ -60,14 +76,6 @@ DATE_RULES: list[DateRule] = [
     # Lookbehind avoids 입고일자 / 사용예정일 / 과거예정일.
     DateRule("일자",
              r"(?<![고예정])일\s*자\s*[:：]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
-    DateRule("Delivery Date (en-word)",
-             r"Delivery\s*Date\s*[:：]?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})"),
-    DateRule("Delivery date (iso)",
-             r"Delivery\s*date\s*[:：]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
-    DateRule("배송 날짜",
-             r"배\s*송\s*날\s*짜\s*[:：]?\s*(\d{1,2}[-/.]\d{1,2}[-/.]\d{4})"),
-    DateRule("Delivery (bare iso)",
-             r"Delivery\s*[:：]\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})"),
 ]
 
 

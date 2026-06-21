@@ -39,7 +39,8 @@ class DeliveryOrderViewSet(CompanyScopedMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="suggest-price")
     def suggest_price(self, request):
         """출고처리 UI에서 거래처/품목 선택 시 단가 자동조회."""
-        company = get_request_company(request)
+        # 회사 컨텍스트 검증만 수행 (X-Company-Id 누락 시 403).
+        get_request_company(request)
         try:
             partner_id = int(request.query_params.get("partner"))
             item_id = int(request.query_params.get("item"))
@@ -57,12 +58,6 @@ class DeliveryOrderViewSet(CompanyScopedMixin, viewsets.ModelViewSet):
                 "effective_from": p.effective_from,
             })
 
-        # 폴백: 표준원가
-        from apps.items.models import Item
-        item = Item.objects.filter(pk=item_id, company=company).first()
-        if item:
-            return Response({
-                "unit_price": item.standard_cost,
-                "source": "standard_cost",
-            })
+        # PartnerPrice 미등록 → 사용자가 수동 입력하도록 0 반환.
+        # (표준원가 폴백 제거: 그린푸드는 거래처별 단가만 사용)
         return Response({"unit_price": 0, "source": "none"})

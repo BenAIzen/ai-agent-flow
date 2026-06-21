@@ -22,4 +22,5 @@ class PartnerSerializer(serializers.ModelSerializer):
             "vat_type", "output_name", "memo",
             "is_active", "accounts",
         )
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "code")  # code는 서버 자동 채번
+        extra_kwargs = {"code": {"required": False}}
