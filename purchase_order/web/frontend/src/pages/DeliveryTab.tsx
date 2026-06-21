@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Download, Loader2, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, Download, Loader2, Package, Plus, Trash2 } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { useAuth } from '@/stores/auth'
@@ -160,7 +160,8 @@ export function DeliveryTab() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <header className="mb-5 flex items-center gap-4">
+      <header className="mb-5 flex items-center gap-3">
+        <Package className="w-6 h-6 text-emerald-600"/>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex-1">출고처리</h2>
         <button onClick={downloadExcel} disabled={downloading || !orders.length}
                 className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
@@ -168,7 +169,7 @@ export function DeliveryTab() {
           엑셀 다운로드
         </button>
         <button onClick={() => setEdit(blankOrder())}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
           <Plus className="w-4 h-4" /> 출고전표 추가
         </button>
       </header>
@@ -309,7 +310,7 @@ export function DeliveryTab() {
             <div className="border border-slate-200 rounded-xl overflow-hidden">
               <div className="bg-slate-50 px-3 py-2 flex items-center gap-2 border-b border-slate-200">
                 <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">품목 라인</span>
-                <button onClick={addLine} className="ml-auto text-xs bg-blue-600 hover:bg-blue-700 text-white rounded px-2.5 py-1">
+                <button onClick={addLine} className="ml-auto text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded px-2.5 py-1">
                   + 라인 추가
                 </button>
               </div>
@@ -397,7 +398,7 @@ export function DeliveryTab() {
                   }
                   save.mutate(edit)
                 }}
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
+                className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg"
               >
                 저장
               </button>

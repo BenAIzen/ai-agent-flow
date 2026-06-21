@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Apple, Plus } from 'lucide-react'
 
 import { api } from '@/api/client'
 import type { Item } from '@/types/models'
@@ -74,10 +74,11 @@ export function ItemsTab() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <header className="mb-5 flex items-center gap-4">
+      <header className="mb-5 flex items-center gap-3">
+        <Apple className="w-6 h-6 text-emerald-600"/>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex-1">품목관리</h2>
         <button onClick={() => setEdit({ ...blankForm })}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
           <Plus className="w-4 h-4" /> 품목 추가
         </button>
       </header>
@@ -195,7 +196,7 @@ export function ItemsTab() {
             <Field label="비고" full><textarea value={edit.memo} onChange={(e) => setEdit({ ...edit, memo: e.target.value })} rows={2} className={inputCls}/></Field>
             <div className="col-span-2 flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setEdit(null)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
-              <button type="submit" className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">저장</button>
+              <button type="submit" className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg">저장</button>
             </div>
           </form>
         )}

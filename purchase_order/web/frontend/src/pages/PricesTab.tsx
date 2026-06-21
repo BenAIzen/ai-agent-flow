@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Plus, Tag } from 'lucide-react'
 
 import { api } from '@/api/client'
 import type { Partner, PartnerPrice } from '@/types/models'
@@ -71,12 +71,15 @@ export function PricesTab() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <header className="mb-5">
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">거래처별 단가등록</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          거래처를 좌측에서 선택하고 우측에서 품목별 매출/매입 단가를 등록합니다.
-          출고처리 시 발주일자 기준으로 가장 최근 적용일의 단가가 자동 적용됩니다.
-        </p>
+      <header className="mb-5 flex items-start gap-3">
+        <Tag className="w-6 h-6 text-emerald-600 mt-0.5"/>
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">거래처별 단가등록</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            거래처를 좌측에서 선택하고 우측에서 품목별 매출/매입 단가를 등록합니다.
+            출고처리 시 발주일자 기준으로 가장 최근 적용일의 단가가 자동 적용됩니다.
+          </p>
+        </div>
       </header>
 
       <div className="grid grid-cols-12 gap-4">
@@ -124,7 +127,7 @@ export function PricesTab() {
                 effective_from: todayISO(), memo: '', is_active: true,
               })}
               disabled={!partnerId}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold rounded-lg px-3 py-1.5 inline-flex items-center gap-1"
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-blue-300 text-white text-xs font-semibold rounded-lg px-3 py-1.5 inline-flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> 단가 추가
             </button>
@@ -218,7 +221,7 @@ export function PricesTab() {
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setEdit(null)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
               <button type="submit" disabled={!edit.item}
-                      className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-lg">저장</button>
+                      className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 disabled:bg-blue-300 text-white font-semibold rounded-lg">저장</button>
             </div>
           </form>
         )}

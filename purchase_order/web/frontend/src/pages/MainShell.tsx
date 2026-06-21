@@ -1,19 +1,23 @@
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
+import {
+  Apple, ArrowLeftRight, CreditCard, FileText,
+  Leaf, LogOut, Package, Scale, Tag, Users, Wallet,
+} from 'lucide-react'
 
 import { useAuth } from '@/stores/auth'
 import { cn } from '@/lib/utils'
 
 const TABS = [
-  { path: '/main',             label: 'PO 변환' },
-  { path: '/main/partners',    label: '거래처관리' },
-  { path: '/main/items',       label: '품목관리' },
-  { path: '/main/prices',      label: '거래처별 단가' },
-  { path: '/main/delivery',    label: '출고처리' },
-  { path: '/main/collections', label: '수금등록' },
-  { path: '/main/payments',    label: '지급등록' },
-  { path: '/main/invoice',     label: '거래명세서' },
-  { path: '/main/ledger',      label: '채권채무집계' },
-]
+  { path: '/main',             label: 'PO 변환',       Icon: ArrowLeftRight },
+  { path: '/main/partners',    label: '거래처관리',     Icon: Users },
+  { path: '/main/items',       label: '품목관리',       Icon: Apple },
+  { path: '/main/prices',      label: '거래처별 단가',  Icon: Tag },
+  { path: '/main/delivery',    label: '출고처리',       Icon: Package },
+  { path: '/main/collections', label: '수금등록',       Icon: Wallet },
+  { path: '/main/payments',    label: '지급등록',       Icon: CreditCard },
+  { path: '/main/invoice',     label: '거래명세서',     Icon: FileText },
+  { path: '/main/ledger',      label: '채권채무집계',   Icon: Scale },
+] as const
 
 export function MainShell() {
   const nav = useNavigate()
@@ -31,42 +35,68 @@ export function MainShell() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-56 bg-white border-r border-slate-200 flex flex-col no-print">
-        <div className="px-5 py-5 border-b border-slate-100">
-          <div className="text-xs text-slate-400 uppercase tracking-wide font-semibold">현재 회사</div>
-          <div className="font-semibold text-slate-900 text-sm mt-1 truncate">{company?.name || '—'}</div>
+    <div className="flex min-h-screen bg-slate-50">
+      <aside className="w-60 bg-white border-r border-slate-200 flex flex-col no-print">
+        {/* 브랜드 */}
+        <div className="px-5 py-5 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center ring-1 ring-white/20">
+              <Leaf className="w-5 h-5" strokeWidth={2.4}/>
+            </div>
+            <div>
+              <div className="font-bold text-base tracking-tight leading-tight">그린푸드</div>
+              <div className="text-[10px] text-emerald-100/90 uppercase tracking-widest">Fresh Produce ERP</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 현재 회사 */}
+        <div className="px-5 py-3.5 border-b border-slate-100 bg-emerald-50/40">
+          <div className="text-[10px] text-emerald-700/70 uppercase tracking-wider font-bold">현재 회사</div>
+          <div className="font-semibold text-slate-900 text-sm mt-0.5 truncate">{company?.name || '—'}</div>
           <button onClick={switchCompany}
-                  className="text-xs text-blue-600 hover:text-blue-800 mt-1">
+                  className="text-xs text-emerald-700 hover:text-emerald-900 mt-1 font-medium">
             회사 변경 →
           </button>
         </div>
 
+        {/* 탭 메뉴 */}
         <nav className="p-3 flex-1 overflow-y-auto">
-          {TABS.map((t) => {
-            const active = t.path === '/main' ? path === '/main' : path.startsWith(t.path)
+          {TABS.map(({ path: p, label, Icon }) => {
+            const active = p === '/main' ? path === '/main' : path.startsWith(p)
             return (
               <Link
-                key={t.path}
-                to={t.path}
+                key={p}
+                to={p}
                 className={cn(
-                  'block w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium',
-                  'transition-colors mb-0.5',
-                  active ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'
+                  'flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium',
+                  'transition-all mb-0.5',
+                  active
+                    ? 'bg-emerald-100/80 text-emerald-800 shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 )}
               >
-                {t.label}
+                <Icon className={cn('w-4 h-4 shrink-0', active ? 'text-emerald-700' : 'text-slate-400')}/>
+                <span className="truncate">{label}</span>
               </Link>
             )
           })}
         </nav>
 
-        <div className="p-3 border-t border-slate-100">
-          <div className="text-xs text-slate-500 px-2 mb-1.5">{user?.display_name || user?.username}</div>
-          <button onClick={doLogout}
-                  className="w-full text-left px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-md">
-            로그아웃
-          </button>
+        {/* 사용자 */}
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold ring-1 ring-emerald-200">
+              {(user?.display_name || user?.username || '?')[0].toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-slate-700 truncate">{user?.display_name || user?.username}</div>
+            </div>
+            <button onClick={doLogout} title="로그아웃"
+                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors">
+              <LogOut className="w-4 h-4"/>
+            </button>
+          </div>
         </div>
       </aside>
 

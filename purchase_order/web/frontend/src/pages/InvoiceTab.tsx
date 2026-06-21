@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Printer, Settings } from 'lucide-react'
+import { FileText, Printer, Settings } from 'lucide-react'
 
 import { api } from '@/api/client'
 import type { InvoiceData, InvoiceSetting } from '@/types/models'
@@ -49,13 +49,14 @@ export function InvoiceTab() {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-5 flex items-center gap-4 no-print">
+        <FileText className="w-6 h-6 text-emerald-600"/>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex-1">거래명세서</h2>
         <button onClick={() => setShowSettings(true)}
                 className="text-sm text-slate-600 hover:text-slate-900 border border-slate-300 bg-white hover:bg-slate-50 rounded-lg px-3 py-2 inline-flex items-center gap-1.5">
           <Settings className="w-4 h-4" /> 양식 설정
         </button>
         <button onClick={() => window.print()} disabled={!data}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-blue-300 text-white text-sm font-semibold rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
           <Printer className="w-4 h-4" /> 인쇄 / PDF로 저장
         </button>
       </header>
@@ -70,7 +71,7 @@ export function InvoiceTab() {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                  className="px-2 py-2 border border-slate-300 rounded-lg text-sm tabular-nums"/>
           <button onClick={loadPreview} disabled={!partnerId}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold rounded-lg px-4 py-2 ml-auto">
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-blue-300 text-white text-sm font-semibold rounded-lg px-4 py-2 ml-auto">
             조회
           </button>
         </div>
@@ -252,7 +253,7 @@ function SettingsForm({ setting, onSave, onCancel }: {
       </div>
       <div className="flex justify-end gap-2 pt-4">
         <button onClick={onCancel} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
-        <button onClick={() => onSave(local)} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">저장</button>
+        <button onClick={() => onSave(local)} className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg">저장</button>
       </div>
     </>
   )

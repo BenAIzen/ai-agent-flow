@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Scale } from 'lucide-react'
 
 import { api } from '@/api/client'
 import type { LedgerResponse } from '@/types/models'
@@ -19,11 +20,14 @@ export function LedgerTab() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <header className="mb-5">
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">채권채무집계</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          거래처별 잔액 = 전월이월 + 당기발생 − 당기수금/지급
-        </p>
+      <header className="mb-5 flex items-start gap-3">
+        <Scale className="w-6 h-6 text-emerald-600 mt-0.5"/>
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">채권채무집계</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            거래처별 잔액 = 전월이월 + 당기발생 − 당기수금/지급
+          </p>
+        </div>
       </header>
 
       <div className="bg-white rounded-xl border border-slate-200 p-3 mb-3 flex items-center gap-3 flex-wrap">
